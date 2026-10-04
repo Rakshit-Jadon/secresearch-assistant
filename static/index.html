@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SecResearch Assistant</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0d0d0d;color:#ececec;overflow:hidden}
+
+/* ── Layout ── */
+#shell{display:flex;height:100vh}
+
+/* ── Sidebar ── */
+#sidebar{width:272px;min-width:272px;background:#111;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;overflow:hidden}
+#sb-top{padding:.85rem 1rem;border-bottom:1px solid #1e1e1e}
+#new-chat-btn{width:100%;padding:.55rem 1rem;border-radius:8px;border:1px solid #2a2a2a;background:transparent;color:#ececec;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:.5rem;transition:background .15s}
+#new-chat-btn:hover{background:#1a1a1a}
+#sb-body{flex:1;overflow-y:auto;padding:.75rem 1rem}
+.sb-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:.4rem;margin-top:.75rem}
+
+/* Provider cards */
+.provider-item{display:flex;align-items:center;gap:.55rem;padding:.45rem .6rem;border-radius:6px;cursor:pointer;transition:background .12s;margin-bottom:2px;border:1px solid transparent;width:100%;background:transparent;text-align:left;color:#bbb}
+.provider-item:hover{background:#1a1a1a}
+.provider-item.active{background:#0f2020;border-color:#1a3a2a;color:#ececec}
+.provider-item:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.6)}
+.dot-warn{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4)}
+.dot-off{background:#333}
+.pname{font-size:13px;flex:1;font-weight:500}
+.pmodel{font-size:10px;color:#555;margin-top:1px}
+.pbadge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.04em}
+.p1{background:#1a3a1a;color:#22c55e}
+.p2{background:#1a2a3a;color:#60a5fa}
+.p3{background:#2a1a3a;color:#a78bfa}
+.p4{background:#2a1a1a;color:#f97316}
+.pauto{background:#1a1a2a;color:#c084fc}
+
+/* Router status mini-table */
+#router-status{margin-top:.5rem;padding:.5rem .6rem;border-radius:6px;background:#0a0a0a;border:1px solid #1e1e1e;font-size:10px;display:none}
+#router-status.show{display:block}
+.rst-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #151515;gap:.5rem}
+.rst-row:last-child{border-bottom:none}
+.rst-name{color:#888;flex:1}
+.rst-bar-wrap{width:60px;height:4px;background:#1a1a1a;border-radius:2px;flex-shrink:0}
+.rst-bar{height:100%;border-radius:2px;background:#22c55e;transition:width .3s}
+.rst-val{color:#555;width:38px;text-align:right;flex-shrink:0}
+
+/* Quick prompts */
+.quick-btn{display:block;width:100%;margin-top:.35rem;padding:.35rem .6rem;border-radius:5px;border:1px solid #1e1e1e;background:#0d0d0d;color:#777;font-size:11px;cursor:pointer;text-align:left;transition:background .12s}
+.quick-btn:hover{background:#151515;color:#aaa}
+.quick-btn:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+
+#sb-footer{padding:.75rem 1rem;border-top:1px solid #1e1e1e;font-size:10px;color:#444;line-height:1.6}
+
+/* ── Main ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#main-header{padding:.65rem 1.25rem;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;background:#0d0d0d;flex-shrink:0;gap:1rem}
+#header-title{font-size:14px;font-weight:600;color:#ececec;white-space:nowrap}
+#model-pill{font-size:10px;padding:3px 10px;border-radius:999px;background:#1a1a1a;border:1px solid #2a2a2a;color:#888;white-space:nowrap;transition:all .3s}
+#model-pill.active{background:#0f2020;border-color:#1a4a2a;color:#22c55e}
+
+/* ── Messages ── */
+#messages{flex:1;overflow-y:auto;padding:1.25rem 0;display:flex;flex-direction:column}
+#messages::-webkit-scrollbar{width:4px}
+#messages::-webkit-scrollbar-thumb{background:#1e1e1e;border-radius:2px}
+.msg-row{padding:.6rem 1.5rem;display:flex;gap:.85rem;max-width:100%}
+.msg-row.user{background:transparent}
+.msg-row.assistant{background:#111}
+.avatar{width:30px;height:30px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.avatar.user-av{background:#1a3a1a;color:#22c55e}
+.avatar.asst-av{background:#1a2a3a;color:#60a5fa}
+.avatar.err-av{background:#3a1a1a;color:#f87171}
+.msg-body{flex:1;min-width:0;padding-top:2px}
+.msg-sender{font-size:10px;font-weight:600;color:#555;margin-bottom:.2rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:.4rem}
+.model-badge{font-size:9px;padding:1px 5px;border-radius:3px;background:#151515;border:1px solid #252525;color:#666;font-weight:400;text-transform:none;letter-spacing:0}
+.msg-text{font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;color:#ddd}
+.msg-text code{font-family:"JetBrains Mono","Fira Code",Consolas,monospace;background:#181818;padding:1px 5px;border-radius:4px;font-size:12px;color:#93c5fd}
+.msg-text pre{background:#141414;border:1px solid #222;border-radius:8px;padding:.75rem 1rem;overflow-x:auto;margin:.5rem 0}
+.msg-text pre code{background:transparent;padding:0;font-size:12px;color:#a5f3fc}
+.msg-text strong{color:#eee}
+.msg-text em{color:#bbb}
+.error-msg{color:#f87171;font-size:13px;padding:.5rem .85rem;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:7px;display:inline-block}
+.thinking{display:flex;align-items:center;gap:.4rem;color:#555;font-size:13px;padding-top:4px}
+.thinking-dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#444;animation:td .9s infinite}
+.thinking-dots span:nth-child(2){animation-delay:.15s}
+.thinking-dots span:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+#empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:.85rem;color:#444;padding:2rem;text-align:center}
+#empty-state .logo{font-size:2.5rem}
+#empty-state h2{font-size:1.15rem;font-weight:600;color:#555}
+#empty-state p{font-size:13px;line-height:1.6;max-width:360px;color:#444}
+.es-chips{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-top:.5rem}
+.es-chip{padding:.35rem .75rem;border-radius:6px;border:1px solid #1e1e1e;background:#111;color:#888;font-size:12px;cursor:pointer;transition:all .15s}
+.es-chip:hover{background:#151515;color:#bbb;border-color:#2a2a2a}
+
+/* ── Composer ── */
+#composer-wrap{padding:.65rem 1.25rem .85rem;border-top:1px solid #1e1e1e;background:#0d0d0d;flex-shrink:0}
+#composer-inner{border:1px solid #222;border-radius:10px;background:#111;display:flex;align-items:flex-end;gap:.5rem;padding:.55rem .7rem;transition:border-color .2s}
+#composer-inner:focus-within{border-color:#2a2a2a}
+#composer-ta{flex:1;background:transparent;border:none;outline:none;color:#ececec;font-size:13.5px;line-height:1.6;resize:none;max-height:180px;overflow-y:auto;font-family:inherit;min-height:22px}
+#composer-ta::placeholder{color:#333}
+#send-btn{width:32px;height:32px;border-radius:7px;border:none;background:#22c55e;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:14px;font-weight:700}
+#send-btn:hover{background:#16a34a}
+#send-btn:disabled{background:#1a1a1a;color:#333;cursor:not-allowed}
+#send-btn:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+#composer-hint{font-size:10px;color:#333;margin-top:.3rem;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <!-- ══ SIDEBAR ══ -->
+  <div id="sidebar">
+    <div id="sb-top">
+      <button id="new-chat-btn" onclick="newChat()" aria-label="New chat">
+        <span aria-hidden="true">＋</span> New Chat
+      </button>
+    </div>
+
+    <div id="sb-body">
+      <div class="sb-label">Mode</div>
+
+      <!-- AUTO -->
+      <button class="provider-item active" data-pid="auto" onclick="setProvider('auto')" aria-label="Auto smart router">
+        <span class="status-dot dot-ok"></span>
+        <div style="flex:1">
+          <div class="pname">🤖 Auto (Smart Router)</div>
+          <div class="pmodel">Priority fallback engine</div>
+        </div>
+        <span class="pbadge pauto">AUTO</span>
+      </button>
+
+      <div class="sb-label" style="margin-top:.85rem">Manual Override</div>
+
+      <!-- GEMINI -->
+      <button class="provider-item" data-pid="gemini" onclick="setProvider('gemini')" aria-label="Gemini Flash">
+        <span class="status-dot dot-off" id="dot-gemini"></span>
+        <div style="flex:1">
+          <div class="pname">Gemini Flash</div>
+          <div class="pmodel">gemini-2.0-flash</div>
+        </div>
+        <span class="pbadge p1">#1</span>
+      </button>
+
+      <!-- GROQ QWEN -->
+      <button class="provider-item" data-pid="groq_qwen" onclick="setProvider('groq')" aria-label="Groq Qwen3-27B">
+        <span class="status-dot dot-off" id="dot-groq"></span>
+        <div style="flex:1">
+          <div class="pname">Groq Qwen3-27B</div>
+          <div class="pmodel">qwen/qwen3-27b · fast</div>
+        </div>
+        <span class="pbadge p2">#2</span>
+      </button>
+
+      <!-- GROQ OSS -->
+      <button class="provider-item" data-pid="groq_oss" onclick="setProvider('groq_oss_manual')" aria-label="Groq OSS-120B">
+        <span class="status-dot dot-off" id="dot-groq_oss"></span>
+        <div style="flex:1">
+          <div class="pname">Groq OSS-120B</div>
+          <div class="pmodel">openai/gpt-oss-120b · reasoning</div>
+        </div>
+        <span class="pbadge p3">#3</span>
+      </button>
+
+      <!-- CLOUDFLARE -->
+      <button class="provider-item" data-pid="cloudflare" onclick="setProvider('cloudflare')" aria-label="Cloudflare Workers AI">
+        <span class="status-dot dot-off" id="dot-cloudflare"></span>
+        <div style="flex:1">
+          <div class="pname">Cloudflare Qwen</div>
+          <div class="pmodel">@cf/qwen/qwen3-8b · edge</div>
+        </div>
+        <span class="pbadge p4">#4</span>
+      </button>
+
+      <!-- Router status mini-panel -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.85rem">
+        <div class="sb-label" style="margin:0">Router Quotas</div>
+        <button onclick="toggleRouterStatus()" style="font-size:10px;color:#555;background:none;border:none;cursor:pointer;padding:0">refresh ↻</button>
+      </div>
+      <div id="router-status" class="show">
+        <div style="color:#444;font-size:10px;text-align:center;padding:.25rem">Loading…</div>
+      </div>
+
+      <!-- Quick prompts -->
+      <div class="sb-label" style="margin-top:.85rem">Quick Prompts</div>
+      <button class="quick-btn" onclick="fillCompliance()">📋 Compliance audit</button>
+      <button class="quick-btn" onclick="fillRecon()">🔍 Explain a CVE</button>
+      <button class="quick-btn" onclick="fillScope()">🔒 Scope check</button>
+      <button class="quick-btn" onclick="fillRouterExplain()">🤖 Explain the router</button>
+    </div>
+
+    <div id="sb-footer">
+      Local-only · keys never leave server<br/>
+      Cloudflare: add <code>CLOUDFLARE_ACCOUNT_ID</code> to .env<br/>
+      Audit: <code>audit_log.jsonl</code>
+    </div>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div id="main">
+    <div id="main-header">
+      <span id="header-title">SecResearch Assistant</span>
+      <span id="model-pill">Auto Router — pick a model or let it choose</span>
+    </div>
+
+    <div id="messages">
+      <div id="empty-state">
+        <div class="logo">🛡️</div>
+        <h2>SecResearch Assistant</h2>
+        <p>4-provider auto-router. Gemini Flash → Groq Qwen → Groq OSS → Cloudflare.<br/>Keys stay server-side.</p>
+        <div class="es-chips">
+          <button class="es-chip" onclick="fillCompliance()">📋 Compliance Audit</button>
+          <button class="es-chip" onclick="fillRecon()">🔍 Explain CVE</button>
+          <button class="es-chip" onclick="fillScope()">🔒 Scope Check</button>
+          <button class="es-chip" onclick="fillRouterExplain()">🤖 How does the router work?</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="composer-wrap">
+      <div id="composer-inner">
+        <textarea id="composer-ta" rows="1" placeholder="Ask the assistant… (Auto Router picks the best model)" aria-label="Message input"></textarea>
+        <button id="send-btn" onclick="sendMessage()" aria-label="Send message" title="Send (Enter)">↑</button>
+      </div>
+      <div id="composer-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+var PROVIDER_META = {
+  "auto":          { label: "Auto Router",      model: "Smart fallback engine" },
+  "gemini":        { label: "Gemini Flash",     model: "gemini-2.0-flash" },
+  "groq":          { label: "Groq Qwen3-27B",   model: "qwen/qwen3-27b" },
+  "groq_oss_manual":{ label: "Groq OSS-120B",  model: "openai/gpt-oss-120b" },
+  "cloudflare":    { label: "Cloudflare Qwen",  model: "@cf/qwen/qwen3-8b" },
+};
+
+// Map UI provider ids to API provider strings
+var PROVIDER_API_MAP = {
+  "auto":           "auto",
+  "gemini":         "gemini",
+  "groq":           "groq",
+  "groq_oss_manual":"groq_oss",
+  "cloudflare":     "cloudflare",
+};
+
+var state = {
+  provider: "auto",
+  messages: [],
+  busy: false,
+  lastModel: null,
+};
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+(async function init() {
+  await refreshProviders();
+  await refreshRouterStatus();
+  setInterval(refreshRouterStatus, 15000);  // auto-refresh quotas every 15s
+  setupComposer();
+})();
+
+async function refreshProviders() {
+  try {
+    var r = await fetch("/api/providers");
+    var d = await r.json();
+    // Update manual dots
+    ["gemini","groq","cloudflare"].forEach(function(p) {
+      var dot = document.getElementById("dot-" + p);
+      if (dot) {
+        dot.className = "status-dot " + (d[p] ? "dot-ok" : "dot-off");
+      }
+    });
+    // groq_oss uses same groq key
+    var dOss = document.getElementById("dot-groq_oss");
+    if (dOss) dOss.className = "status-dot " + (d["groq"] ? "dot-ok" : "dot-off");
+  } catch(e) {}
+}
+
+async function refreshRouterStatus() {
+  try {
+    var r = await fetch("/api/router-status");
+    var d = await r.json();
+    renderRouterStatus(d);
+  } catch(e) {}
+}
+
+function renderRouterStatus(data) {
+  var el = document.getElementById("router-status");
+  if (!data || !Object.keys(data).length) {
+    el.innerHTML = '<div style="color:#444;font-size:10px;text-align:center;padding:.25rem">No data</div>';
+    return;
+  }
+  var rows = Object.entries(data)
+    .sort(function(a,b){ return a[1].priority - b[1].priority; })
+    .map(function(kv) {
+      var p = kv[1];
+      var pct = Math.round((p.daily_used / p.daily_limit) * 100);
+      var avail = p.available;
+      var barColor = avail ? (pct > 80 ? "#f59e0b" : "#22c55e") : "#3f3f3f";
+      var cdLeft = p.cooldown_left > 0 ? (" (" + p.cooldown_left + "s cd)") : "";
+      return '<div class="rst-row">' +
+        '<span class="rst-name">' + esc(p.display) + '</span>' +
+        '<div class="rst-bar-wrap"><div class="rst-bar" style="width:' + Math.min(pct,100) + '%;background:' + barColor + '"></div></div>' +
+        '<span class="rst-val" style="color:' + (avail?"#555":"#3f3f3f") + '">' + p.daily_used + '/' + p.daily_limit + esc(cdLeft) + '</span>' +
+        '</div>';
+    }).join("");
+  el.innerHTML = rows;
+}
+
+function toggleRouterStatus() {
+  refreshRouterStatus();
+}
+
+/* ═══════════════════════════════════════════
+   PROVIDER SELECTION
+═══════════════════════════════════════════ */
+function setProvider(pid) {
+  state.provider = pid;
+  document.querySelectorAll(".provider-item").forEach(function(btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-pid") === pid ||
+      (pid === "groq" && btn.getAttribute("data-pid") === "groq_qwen") ||
+      (pid === "groq_oss_manual" && btn.getAttribute("data-pid") === "groq_oss")
+    );
+  });
+  var meta = PROVIDER_META[pid] || {};
+  document.getElementById("model-pill").textContent =
+    (meta.label || pid) + " — " + (meta.model || "");
+  document.getElementById("model-pill").className =
+    "model-pill " + (pid !== "auto" ? "active" : "");
+  document.getElementById("composer-ta").placeholder =
+    pid === "auto"
+      ? "Ask the assistant… (Auto Router picks the best model)"
+      : "Ask the assistant… [" + (meta.label || pid) + "]";
+}
+
+/* ═══════════════════════════════════════════
+   CHAT
+═══════════════════════════════════════════ */
+function newChat() {
+  state.messages = [];
+  state.lastModel = null;
+  var msgEl = document.getElementById("messages");
+  msgEl.innerHTML = "";
+  msgEl.appendChild(emptyState());
+  document.getElementById("model-pill").textContent = "Auto Router — pick a model or let it choose";
+  document.getElementById("composer-ta").value = "";
+  autoGrow();
+}
+
+async function sendMessage() {
+  var ta   = document.getElementById("composer-ta");
+  var text = ta.value.trim();
+  if (!text || state.busy) return;
+  ta.value = "";
+  autoGrow();
+
+  var es = document.getElementById("empty-state");
+  if (es) es.remove();
+
+  state.messages.push({ role: "user", content: text });
+  appendMsg("user", text, null);
+
+  var thinkId = appendThinking();
+  state.busy  = true;
+  updateSendBtn();
+
+  var apiProvider = PROVIDER_API_MAP[state.provider] || state.provider;
+
+  try {
+    var resp = await fetch("/api/chat", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ provider: apiProvider, messages: state.messages }),
+    });
+    var data = await resp.json();
+    removeThinking(thinkId);
+
+    if (data.error) {
+      appendError(data.error);
+    } else {
+      state.messages.push({ role: "assistant", content: data.reply });
+      var modelLabel = data.model ? data.model + " via " + data.provider : null;
+      state.lastModel = modelLabel;
+      appendMsg("assistant", data.reply, modelLabel);
+      // Update pill
+      if (data.model) {
+        var pill = document.getElementById("model-pill");
+        pill.textContent = data.provider + " · " + data.model;
+        pill.className   = "model-pill active";
+      }
+      // Refresh quota bars
+      refreshRouterStatus();
+    }
+  } catch(e) {
+    removeThinking(thinkId);
+    appendError("Network error: is app.py running on port 5000?");
+  }
+
+  state.busy = false;
+  updateSendBtn();
+  scrollBottom();
+}
+
+/* ═══════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════ */
+function emptyState() {
+  var d = document.createElement("div");
+  d.id = "empty-state";
+  d.innerHTML =
+    '<div class="logo">&#128737;&#65039;</div>' +
+    '<h2>SecResearch Assistant</h2>' +
+    '<p>4-provider auto-router: Gemini Flash &rarr; Groq Qwen &rarr; Groq OSS &rarr; Cloudflare.<br/>Keys stay server-side.</p>' +
+    '<div class="es-chips">' +
+    '<button class="es-chip" onclick="fillCompliance()">&#128203; Compliance Audit</button>' +
+    '<button class="es-chip" onclick="fillRecon()">&#128269; Explain CVE</button>' +
+    '<button class="es-chip" onclick="fillScope()">&#128274; Scope Check</button>' +
+    '<button class="es-chip" onclick="fillRouterExplain()">&#129302; How does the router work?</button>' +
+    '</div>';
+  return d;
+}
+
+function appendMsg(role, text, modelLabel) {
+  var msgEl = document.getElementById("messages");
+  var row   = document.createElement("div");
+  row.className = "msg-row " + role;
+
+  var av = document.createElement("div");
+  av.className = "avatar " + (role === "user" ? "user-av" : "asst-av");
+  av.setAttribute("aria-hidden", "true");
+  av.textContent = role === "user" ? "U" : "AI";
+
+  var body   = document.createElement("div");
+  body.className = "msg-body";
+
+  var sender = document.createElement("div");
+  sender.className = "msg-sender";
+  if (role === "user") {
+    sender.textContent = "You";
+  } else {
+    sender.innerHTML = "Assistant";
+    if (modelLabel) {
+      sender.innerHTML +=
+        ' <span class="model-badge">' + esc(modelLabel) + '</span>';
+    }
+  }
+
+  var textEl = document.createElement("div");
+  textEl.className = "msg-text";
+  textEl.innerHTML = renderMarkdown(text);
+
+  body.appendChild(sender);
+  body.appendChild(textEl);
+  row.appendChild(av);
+  row.appendChild(body);
+  msgEl.appendChild(row);
+  scrollBottom();
+}
+
+function appendThinking() {
+  var msgEl = document.getElementById("messages");
+  var id    = "think-" + Date.now();
+  var row   = document.createElement("div");
+  row.className = "msg-row assistant";
+  row.id = id;
+  var provLabel = state.provider === "auto" ? "Auto Router" :
+    (PROVIDER_META[state.provider] || {}).label || state.provider;
+  row.innerHTML =
+    '<div class="avatar asst-av" aria-hidden="true">AI</div>' +
+    '<div class="msg-body">' +
+      '<div class="msg-sender">' + esc(provLabel) + '</div>' +
+      '<div class="thinking"><div class="thinking-dots"><span></span><span></span><span></span></div> Thinking…</div>' +
+    '</div>';
+  msgEl.appendChild(row);
+  scrollBottom();
+  return id;
+}
+
+function removeThinking(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function appendError(msg) {
+  var msgEl = document.getElementById("messages");
+  var row   = document.createElement("div");
+  row.className = "msg-row assistant";
+  row.innerHTML =
+    '<div class="avatar err-av" aria-hidden="true">!</div>' +
+    '<div class="msg-body"><div class="msg-sender">Error</div>' +
+    '<div class="error-msg">' + esc(msg) + '</div></div>';
+  msgEl.appendChild(row);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  var el = document.getElementById("messages");
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateSendBtn() {
+  document.getElementById("send-btn").disabled = state.busy;
+}
+
+/* ═══════════════════════════════════════════
+   SAFE ESCAPE + MARKDOWN
+═══════════════════════════════════════════ */
+function esc(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function renderMarkdown(text) {
+  var s = esc(text);
+  // Fenced code blocks
+  s = s.replace(/```([^\n]*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    return '<pre><code>' + code.trim() + '</code></pre>';
+  });
+  s = s.replace(/```([\s\S]*?)```/g, function(_, code) {
+    return '<pre><code>' + code.trim() + '</code></pre>';
+  });
+  // Inline code
+  s = s.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  // Bold / italic
+  s = s.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
+  s = s.replace(/\*\*(.+?)\*\*/g,  "<strong>$1</strong>");
+  s = s.replace(/\*(.+?)\*/g,       "<em>$1</em>");
+  // Headers
+  s = s.replace(/^### (.+)$/gm, '<strong style="font-size:12px;color:#aaa;display:block;margin:.4rem 0 .1rem">$1</strong>');
+  s = s.replace(/^## (.+)$/gm,  '<strong style="font-size:13px;color:#ccc;display:block;margin:.5rem 0 .1rem">$1</strong>');
+  s = s.replace(/^# (.+)$/gm,   '<strong style="font-size:14px;color:#eee;display:block;margin:.6rem 0 .1rem">$1</strong>');
+  // Horizontal rule
+  s = s.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid #1e1e1e;margin:.5rem 0"/>');
+  // Inline links (escaped)
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline">$1</a>');
+  return s;
+}
+
+/* ═══════════════════════════════════════════
+   QUICK FILLS
+═══════════════════════════════════════════ */
+function _fillAndFocus(text) {
+  var ta = document.getElementById("composer-ta");
+  ta.value = text;
+  autoGrow();
+  ta.focus();
+  var es = document.getElementById("empty-state");
+  if (es) es.remove();
+}
+
+function fillCompliance() {
+  _fillAndFocus(
+    "You are a website compliance and quality auditor. Review the security assistant tool I have built.\n" +
+    "Business type: internal security research SaaS tool.\nCountry: India. Main visitors: India, EU.\n\n" +
+    "Run these 11 checks:\n1. Privacy Policy\n2. Terms & Conditions\n3. Cookie Policy\n" +
+    "4. Refund/Cancellation Policy\n5. Cookie and form consent\n6. User data collected\n" +
+    "7. Third-party embeds\n8. Alt text and colour contrast (WCAG AA)\n" +
+    "9. Keyboard-friendly forms\n10. Fake reviews / unsupported claims\n11. Copyrighted assets & local laws\n\n" +
+    "Output: summary table (Pass / Needs work / Missing + priority), then exact fixes for each issue, " +
+    "draft starter policies, and a prioritised top-5 to-do list."
+  );
+}
+
+function fillRecon() {
+  _fillAndFocus(
+    "Explain CVE-2024-38816 (Spring Framework Path Traversal).\n" +
+    "Include: CVSS score, affected versions, root cause, step-by-step PoC for an isolated lab VM, and remediation."
+  );
+}
+
+function fillScope() {
+  _fillAndFocus(
+    "I want to test 192.168.56.10 (lab VM, explicitly authorised) for CVE-2024-23897 " +
+    "(Jenkins arbitrary file read via CLI). Confirm this is in scope, then outline a safe isolated test plan."
+  );
+}
+
+function fillRouterExplain() {
+  _fillAndFocus(
+    "Explain how the 4-provider auto-router in this app works. " +
+    "Cover: priority order (Gemini Flash → Groq Qwen → Groq OSS → Cloudflare), " +
+    "RPM and daily quota tracking, exponential cooldown on failure, " +
+    "and when you would pick each provider."
+  );
+}
+
+/* ═══════════════════════════════════════════
+   COMPOSER
+═══════════════════════════════════════════ */
+function setupComposer() {
+  var ta = document.getElementById("composer-ta");
+  ta.addEventListener("input", autoGrow);
+  ta.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  autoGrow();
+}
+
+function autoGrow() {
+  var ta = document.getElementById("composer-ta");
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight, 180) + "px";
+}
+</script>
+</body>
+</html>
