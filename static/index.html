@@ -140,17 +140,17 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
         <span class="status-dot dot-off" id="dot-gemini"></span>
         <div style="flex:1">
           <div class="pname">Gemini Flash</div>
-          <div class="pmodel">gemini-2.0-flash</div>
+          <div class="pmodel">gemini-3.5-flash</div>
         </div>
         <span class="pbadge p1">#1</span>
       </button>
 
       <!-- GROQ QWEN -->
-      <button class="provider-item" data-pid="groq_qwen" onclick="setProvider('groq')" aria-label="Groq Qwen3-27B">
+      <button class="provider-item" data-pid="groq_qwen" onclick="setProvider('groq')" aria-label="Groq Qwen3.8-27B">
         <span class="status-dot dot-off" id="dot-groq"></span>
         <div style="flex:1">
-          <div class="pname">Groq Qwen3-27B</div>
-          <div class="pmodel">qwen/qwen3-27b · fast</div>
+          <div class="pname">Groq Qwen3.8-27B</div>
+          <div class="pmodel">qwen/qwen3.8-27b · fast</div>
         </div>
         <span class="pbadge p2">#2</span>
       </button>
@@ -169,8 +169,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
       <button class="provider-item" data-pid="cloudflare" onclick="setProvider('cloudflare')" aria-label="Cloudflare Workers AI">
         <span class="status-dot dot-off" id="dot-cloudflare"></span>
         <div style="flex:1">
-          <div class="pname">Cloudflare Qwen</div>
-          <div class="pmodel">@cf/qwen/qwen3-8b · edge</div>
+          <div class="pname">Cloudflare Llama</div>
+          <div class="pmodel">@cf/meta/llama-3.1-8b-instruct · edge</div>
         </div>
         <span class="pbadge p4">#4</span>
       </button>
@@ -236,10 +236,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Ro
 ═══════════════════════════════════════════ */
 var PROVIDER_META = {
   "auto":          { label: "Auto Router",      model: "Smart fallback engine" },
-  "gemini":        { label: "Gemini Flash",     model: "gemini-2.0-flash" },
-  "groq":          { label: "Groq Qwen3-27B",   model: "qwen/qwen3-27b" },
+  "gemini":        { label: "Gemini Flash",     model: "gemini-3.5-flash" },
+  "groq":          { label: "Groq Qwen3.8-27B", model: "qwen/qwen3.8-27b" },
   "groq_oss_manual":{ label: "Groq OSS-120B",  model: "openai/gpt-oss-120b" },
-  "cloudflare":    { label: "Cloudflare Qwen",  model: "@cf/qwen/qwen3-8b" },
+  "cloudflare":    { label: "Cloudflare Llama", model: "@cf/meta/llama-3.1-8b-instruct" },
 };
 
 // Map UI provider ids to API provider strings

@@ -28,17 +28,17 @@ class Provider(Enum):
 _DEFAULTS: Dict[Provider, Dict[str, Any]] = {
     Provider.GEMINI: {
         "display":     "Gemini Flash",
-        "api_id":      "gemini",          # maps to app.py call_google()
-        "model_name":  "gemini-2.0-flash",
+        "api_id":      "gemini",
+        "model_name":  "gemini-3.5-flash",
         "priority":    1,
         "rpm_limit":   15,
         "daily_limit": 1500,
-        "cooldown_s":  60,                # seconds to wait after a failure
+        "cooldown_s":  60,
     },
     Provider.GROQ_QWEN: {
-        "display":     "Groq Qwen3-27B",
+        "display":     "Groq Qwen3.8-27B",
         "api_id":      "groq",
-        "model_name":  "qwen/qwen3-27b",
+        "model_name":  "qwen/qwen3.8-27b",
         "priority":    2,
         "rpm_limit":   30,
         "daily_limit": 1000,
@@ -54,9 +54,9 @@ _DEFAULTS: Dict[Provider, Dict[str, Any]] = {
         "cooldown_s":  30,
     },
     Provider.CLOUDFLARE: {
-        "display":     "Cloudflare Qwen",
+        "display":     "Cloudflare Llama",
         "api_id":      "cloudflare",
-        "model_name":  "@cf/qwen/qwen3-8b",
+        "model_name":  "@cf/meta/llama-3.1-8b-instruct",
         "priority":    4,
         "rpm_limit":   50,
         "daily_limit": 10_000,

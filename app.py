@@ -42,16 +42,20 @@ _PLACEHOLDER_RE = re.compile(
 MANUAL_PROVIDERS = {
     "gemini":     "GOOGLE_AI_STUDIO_API_KEY",
     "groq":       "GROQ_API_KEY",
+    "groq_qwen":  "GROQ_API_KEY",
+    "groq_oss":   "GROQ_API_KEY",
     "nvidia":     "NVIDIA_API_KEY",
     "cloudflare": "CLOUDFLARE_API_KEY",
 }
 
 # Manual model defaults (when not routed)
 MANUAL_MODELS = {
-    "gemini":     "gemini-2.0-flash",
-    "groq":       "llama3-70b-8192",
+    "gemini":     "gemini-3.5-flash",
+    "groq":       "qwen/qwen3.8-27b",
+    "groq_qwen":  "qwen/qwen3.8-27b",
+    "groq_oss":   "openai/gpt-oss-120b",
     "nvidia":     "meta/llama-3.1-70b-instruct",
-    "cloudflare": "@cf/qwen/qwen3-8b",
+    "cloudflare": "@cf/meta/llama-3.1-8b-instruct",
 }
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
@@ -184,10 +188,11 @@ def _handle_manual(provider, messages, system_text, last_user):
         }), 503
 
     model_name = MANUAL_MODELS[provider]
+    api_id     = "groq" if provider in ("groq", "groq_qwen", "groq_oss") else provider
 
     try:
         reply = _dispatch(
-            api_id      = provider,
+            api_id      = api_id,
             model_name  = model_name,
             system_text = system_text,
             messages    = messages,
