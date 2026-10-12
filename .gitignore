@@ -1,6 +1,13 @@
 # ── secrets ──────────────────────────────────────────────────────────────────
 .env
-*.env.local
+.env.*
+*.env
+*.env.*
+*.key
+*.pem
+*.secret
+*.token
+credentials.json
 
 # ── runtime data ─────────────────────────────────────────────────────────────
 audit_log.jsonl
